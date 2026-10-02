@@ -300,7 +300,8 @@ const app = (() => {
     const cell = (t, f) => (t.survey_rate == null ? '—' : f(t));
     // Green when the refi comes out ahead over the life of the loan, red when it costs more.
     const sav = v => `<span class="${v > 0 ? 'good' : 'bad'}">${v > 0 ? '+' : ''}${money(v)}</span>`;
-    const change = v => `${v > 0 ? '+' : '−'}${money(Math.abs(v))}`;
+    // Green when the monthly payment drops, red when it rises.
+    const change = v => `<span class="${v > 0 ? 'bad' : 'good'}">${v > 0 ? '+' : '−'}${money(Math.abs(v))}</span>`;
     const rows = [
       ['Rate', pct(c.rate, 3), cell(t30, t => pct(t.loan_rate, 3)), cell(t15, t => pct(t.loan_rate, 3))],
       ['Monthly P&amp;I', money(c.payment), cell(t30, t => money(t.payment)), cell(t15, t => money(t.payment))],
