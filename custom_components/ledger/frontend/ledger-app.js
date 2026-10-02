@@ -32,6 +32,11 @@ const app = (() => {
     return toDate(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', ...(withYear ? { year: 'numeric' } : {}) });
   }
 
+  function monthName(ym) {
+    const [y, m] = ym.split('-').map(Number);
+    return new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  }
+
   const pct = (v, d = 2) => v == null ? '—' : `${v.toFixed(d)}%`;
   const money = v => v == null ? '—' : `${v < 0 ? '−' : ''}$${Math.abs(Math.round(v)).toLocaleString('en-US')}`;
   const signed = (v, d = 2) => v == null ? '' : `${v > 0 ? '+' : v < 0 ? '−' : '±'}${Math.abs(v).toFixed(d)}`;
@@ -311,7 +316,7 @@ const app = (() => {
         <tbody>${rows.map(r => `<tr>${r.map((v, i) => i ? `<td class="num">${v}</td>` : `<td>${v}</td>`).join('')}</tr>`).join('')}</tbody>
       </table></div>
       <p class="note" style="margin-top:10px">
-        Balance ${money(c.balance)} with ${months(c.months_remaining)} left (rolled forward from your ${fmtDay(data.loan.as_of, true)} entry).
+        Balance ${money(c.balance)} with ${months(c.months_remaining)} left — last payment ${monthName(c.payoff_month)} (rolled forward from your ${fmtDay(data.loan.as_of, true)} entry; should match your servicer's payoff date).
         Refi rates are the survey average${spread}, with ${money(a.closing_costs)} in closing costs paid upfront.
         ${a.closing_costs_estimated ? `That's an estimate at ${a.estimated_cost_pct}% of the balance; a lender's figure under Refi assumptions will sharpen it.` : ''}
         Principal &amp; interest only — taxes and insurance don't change.
@@ -344,7 +349,7 @@ const app = (() => {
           ${field('balance', 'Principal balance', 'From your latest statement', 'type="text" inputmode="decimal" autocomplete="off"')}
           ${field('as_of', 'Balance as of', 'Ledger rolls the balance forward from here', 'type="date"')}
           ${field('rate', 'Interest rate (%)', '', 'type="text" inputmode="decimal" autocomplete="off"')}
-          ${field('payment', 'Monthly principal &amp; interest', 'Leave out escrow (taxes/insurance)', 'type="text" inputmode="decimal" autocomplete="off"')}
+          ${field('payment', 'Monthly principal &amp; interest', 'Principal + interest only, not your total payment — check a statement or amortization schedule', 'type="text" inputmode="decimal" autocomplete="off"')}
         </div>
         <div class="form-group">Refi assumptions <span>optional — leave blank for defaults</span></div>
         <div class="form">

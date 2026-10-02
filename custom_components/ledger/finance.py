@@ -38,6 +38,11 @@ def term_months(principal: float, rate_pct: float, pmt: float) -> int:
     return math.ceil(-math.log(1 - principal * r / pmt) / math.log(1 + r) - 1e-6)
 
 
+def _add_months(d: date, n: int) -> str:
+    m = d.year * 12 + d.month - 1 + n
+    return f"{m // 12:04d}-{m % 12 + 1:02d}"
+
+
 def payment(principal: float, rate_pct: float, months: int) -> float:
     if months <= 0 or principal <= 0:
         return 0.0
@@ -92,6 +97,9 @@ def current_loan(loan: dict, today: date) -> dict:
         "payment": round(pmt, 2),
         "months_remaining": remaining,
         "interest_remaining": round(sum(_interest_schedule(balance, loan["rate"], pmt, remaining)), 2),
+        # Next payment is due next month, so the last one lands `remaining`
+        # months after this one. Lets the user check against their servicer.
+        "payoff_month": _add_months(today, remaining),
     }
 
 
