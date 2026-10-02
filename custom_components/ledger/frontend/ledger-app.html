@@ -62,7 +62,7 @@
     .pill { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
     .pill.go { background: rgba(48, 209, 88, 0.15); color: var(--green); }
     .pill.close { background: rgba(255, 159, 10, 0.15); color: var(--orange); }
-    .pill.wait { background: rgba(142, 142, 147, 0.18); color: var(--text2); }
+    .pill.no { background: rgba(255, 69, 58, 0.15); color: var(--red); }
 
     /* Chart */
     .chart-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
@@ -90,8 +90,8 @@
     th:first-child, td:first-child { text-align: left; color: var(--muted); font-weight: 400; }
     thead th { border-top: none; font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
     .scroll { overflow-x: auto; }
-    .good { color: var(--green); }
-    .bad { color: var(--text2); }
+    .good { color: var(--green); font-weight: 600; }
+    .bad { color: var(--red); font-weight: 600; }
 
     /* Loan form */
     details.panel { background: var(--card); border-radius: 14px; margin-bottom: 12px; }

@@ -106,7 +106,7 @@ const app = (() => {
           <div class="verdict-line">No rate breaks even within ${a.target_months} months at these closing costs.</div></div>`;
       }
       const trig = t.trigger_capped ? `${pct(t.trigger_survey_rate)} or higher` : `${pct(t.trigger_survey_rate)} or lower`;
-      let pill = '<span class="pill wait">○ Not yet</span>';
+      let pill = '<span class="pill no">✕ Not yet</span>';
       if (t.in_range) pill = '<span class="pill go">✓ Refi territory</span>';
       else if (t.gap != null && t.gap <= CLOSE_PTS) pill = '<span class="pill close">▲ Getting close</span>';
       const gap = t.survey_rate == null ? 'No survey rate yet.'
@@ -298,7 +298,8 @@ const app = (() => {
     if (a.error) return `<div class="card"><div class="card-title">Refi math</div><div class="form-msg err">${esc(a.error)}</div></div>`;
     const c = a.current, t30 = a.terms['30'], t15 = a.terms['15'];
     const cell = (t, f) => (t.survey_rate == null ? '—' : f(t));
-    const sav = v => `<span class="${v > 0 ? 'good' : 'bad'}">${money(v)}</span>`;
+    // Green when the refi comes out ahead over the life of the loan, red when it costs more.
+    const sav = v => `<span class="${v > 0 ? 'good' : 'bad'}">${v > 0 ? '+' : ''}${money(v)}</span>`;
     const change = v => `${v > 0 ? '+' : '−'}${money(Math.abs(v))}`;
     const rows = [
       ['Rate', pct(c.rate, 3), cell(t30, t => pct(t.loan_rate, 3)), cell(t15, t => pct(t.loan_rate, 3))],
