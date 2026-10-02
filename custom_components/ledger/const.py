@@ -29,5 +29,7 @@ OVERLAP_DAYS = 30
 REFRESH_INTERVAL_HOURS = 6
 STARTUP_DELAY_SECONDS = 20
 
-# Defaults for the loan form; the user owns these once saved.
+# Defaults for the optional refi assumptions on the loan form. A blank
+# closing-cost field is estimated in finance.py (ESTIMATED_COST_PCT).
 DEFAULT_TARGET_MONTHS = 36
+DEFAULT_QUOTE_SPREAD = 0.0

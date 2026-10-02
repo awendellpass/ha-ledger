@@ -18,6 +18,10 @@ from __future__ import annotations
 import math
 from datetime import date
 
+# Refi closing costs when the user hasn't entered a figure: typical range is
+# 2–5% of the loan, so 2% is the optimistic end (it gives an earlier trigger).
+ESTIMATED_COST_PCT = 2.0
+
 
 def months_between(start: date, end: date) -> int:
     """Whole calendar months from start's month to end's month."""
@@ -135,7 +139,8 @@ def analyze(loan: dict, today: date, survey_rates: dict[int, float | None]) -> d
     each term in survey_rates ({30: 7.28, 15: 6.60})."""
     cur = current_loan(loan, today)
     spread = loan.get("quote_spread") or 0.0
-    costs = loan["closing_costs"]
+    costs_estimated = loan.get("closing_costs") is None
+    costs = round(cur["balance"] * ESTIMATED_COST_PCT / 100, -2) if costs_estimated else loan["closing_costs"]
     target = loan["target_months"]
 
     terms = {}
@@ -167,4 +172,11 @@ def analyze(loan: dict, today: date, survey_rates: dict[int, float | None]) -> d
             })
         terms[str(years)] = result
 
-    return {"current": cur, "terms": terms, "closing_costs": costs, "target_months": target}
+    return {
+        "current": cur,
+        "terms": terms,
+        "closing_costs": costs,
+        "closing_costs_estimated": costs_estimated,
+        "estimated_cost_pct": ESTIMATED_COST_PCT,
+        "target_months": target,
+    }

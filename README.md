@@ -17,7 +17,7 @@ Your loan details are stored only in Home Assistant's `/config/ledger.db`.
    ledger:
    ```
 3. Restart Home Assistant and open **Ledger** in the sidebar. Rate history loads about 20 seconds after startup.
-4. Open **Your loan**, enter your balance, rate, monthly principal & interest and estimated closing costs, then save.
+4. Open **Your loan**, enter your current balance, rate and monthly principal & interest, then save. The refi assumptions (closing costs, break-even target, quote adjustment) are optional; blank closing costs are estimated at 2% of your balance.
 
 No API key is needed. If FRED ever starts refusing requests, get a free key at https://fred.stlouisfed.org/docs/api/api_key.html and add it:
 

@@ -89,6 +89,8 @@ const app = (() => {
 
   // ── Verdict ────────────────────────────────────────────────
 
+  const costLabel = a => a.closing_costs_estimated ? `~${money(a.closing_costs)} est.` : money(a.closing_costs);
+
   function verdictCard() {
     const a = data.analysis;
     if (!a || a.error) return '';
@@ -112,7 +114,7 @@ const app = (() => {
       </div>`;
     });
     return `<div class="card">
-      <div class="card-title">Refi trigger · break-even within ${a.target_months} months</div>
+      <div class="card-title">Refi trigger · break-even within ${a.target_months} months · ${costLabel(a)} closing costs</div>
       <div class="verdicts">${v.join('')}</div>
     </div>`;
   }
@@ -310,7 +312,9 @@ const app = (() => {
       </table></div>
       <p class="note" style="margin-top:10px">
         Balance ${money(c.balance)} with ${months(c.months_remaining)} left (rolled forward from your ${fmtDay(data.loan.as_of, true)} entry).
-        Refi rates are the survey average${spread}; closing costs ${money(a.closing_costs)} paid upfront. Principal &amp; interest only — taxes and insurance don't change.
+        Refi rates are the survey average${spread}, with ${money(a.closing_costs)} in closing costs paid upfront.
+        ${a.closing_costs_estimated ? `That's an estimate at ${a.estimated_cost_pct}% of the balance; a lender's figure under Refi assumptions will sharpen it.` : ''}
+        Principal &amp; interest only — taxes and insurance don't change.
       </p>
       <p class="note" style="margin-top:6px">
         Break-even is the month the interest you save covers the closing costs.
@@ -328,21 +332,25 @@ const app = (() => {
     const field = (k, label, hint, attrs) => `
       <div class="field">
         <label for="f-${k}">${label}</label>
-        <input id="f-${k}" ${attrs} value="${val(k, k === 'as_of' ? data.today : k === 'target_months' ? 36 : k === 'quote_spread' ? 0 : '')}">
+        <input id="f-${k}" ${attrs} value="${val(k, k === 'as_of' ? data.today : '')}">
         ${hint ? `<div class="hint">${hint}</div>` : ''}
       </div>`;
     return `<details class="panel" ${data.loan ? '' : 'open'}>
       <summary>Your loan</summary>
       <div class="panel-body">
-        ${data.loan ? '' : '<p class="note" style="margin-bottom:12px">Enter your mortgage to see the refi math. Stored only in Home Assistant.</p>'}
+        ${data.loan ? '' : '<p class="note" style="margin-bottom:12px">Enter your current mortgage to see the refi math. Stored only in Home Assistant.</p>'}
+        <div class="form-group">Your mortgage</div>
         <div class="form">
           ${field('balance', 'Principal balance', 'From your latest statement', 'type="number" step="0.01" min="0" inputmode="decimal"')}
           ${field('as_of', 'Balance as of', 'Ledger rolls the balance forward from here', 'type="date"')}
           ${field('rate', 'Interest rate (%)', '', 'type="number" step="0.001" min="0" inputmode="decimal"')}
           ${field('payment', 'Monthly principal &amp; interest', 'Leave out escrow (taxes/insurance)', 'type="number" step="0.01" min="0" inputmode="decimal"')}
-          ${field('closing_costs', 'Estimated closing costs', 'Typically 2–3% of the loan', 'type="number" step="100" min="0" inputmode="decimal"')}
-          ${field('target_months', 'Break-even target (months)', 'How soon the refi must pay for itself — ~ how long you\'ll stay', 'type="number" step="1" min="1" max="360"')}
-          ${field('quote_spread', 'Quote adjustment (pts)', 'Your real quote minus the survey; 0 until you have one', 'type="number" step="0.125"')}
+        </div>
+        <div class="form-group">Refi assumptions <span>optional — leave blank for defaults</span></div>
+        <div class="form">
+          ${field('closing_costs', 'Refi closing costs', 'Fees on the new loan (appraisal, title, origination). Blank = estimate at 2% of your balance', 'type="number" step="100" min="0" inputmode="decimal" placeholder="Estimate"')}
+          ${field('target_months', 'Break-even target (months)', 'How soon the refi must pay for itself — about how long you\'ll stay', 'type="number" step="1" min="1" max="360" placeholder="36"')}
+          ${field('quote_spread', 'Quote adjustment (pts)', 'A real quote minus the survey rate, once you have one', 'type="number" step="0.125" placeholder="0"')}
         </div>
         <div class="form-actions">
           <button class="btn primary" onclick="app.saveLoan()" ${saving ? 'disabled' : ''}>${saving ? 'Saving…' : 'Save'}</button>

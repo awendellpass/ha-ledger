@@ -14,7 +14,7 @@ from homeassistant.core import HomeAssistant
 
 from .const import DB_NAME
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 LOAN_FIELDS = ("balance", "rate", "payment", "as_of", "closing_costs", "target_months", "quote_spread")
 
@@ -42,7 +42,7 @@ def init_db(hass: HomeAssistant) -> None:
                 rate          REAL NOT NULL,     -- percent
                 payment       REAL NOT NULL,     -- monthly P&I, no escrow
                 as_of         TEXT NOT NULL,     -- ISO date the balance was read
-                closing_costs REAL NOT NULL,
+                closing_costs REAL,              -- refi costs; NULL = estimate
                 target_months INTEGER NOT NULL,  -- break-even you'd accept
                 quote_spread  REAL NOT NULL DEFAULT 0,  -- your quote minus the survey
                 updated_at    TEXT NOT NULL
@@ -53,10 +53,39 @@ def init_db(hass: HomeAssistant) -> None:
             );
             """
         )
+        row = conn.execute("SELECT value FROM meta WHERE key = 'schema_version'").fetchone()
+        version = int(row["value"]) if row else SCHEMA_VERSION
+        if version < 2:
+            _migrate_v2(conn)
         conn.execute(
-            "INSERT OR IGNORE INTO meta (key, value) VALUES ('schema_version', ?)",
+            "INSERT INTO meta (key, value) VALUES ('schema_version', ?) "
+            "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
             (str(SCHEMA_VERSION),),
         )
+
+
+def _migrate_v2(conn: sqlite3.Connection) -> None:
+    """v2: loan.closing_costs becomes nullable (blank = estimate). SQLite
+    can't drop NOT NULL in place, so rebuild the table, keeping the saved row."""
+    conn.executescript(
+        """
+        CREATE TABLE loan_v2 (
+            id            INTEGER PRIMARY KEY CHECK (id = 1),
+            balance       REAL NOT NULL,
+            rate          REAL NOT NULL,
+            payment       REAL NOT NULL,
+            as_of         TEXT NOT NULL,
+            closing_costs REAL,
+            target_months INTEGER NOT NULL,
+            quote_spread  REAL NOT NULL DEFAULT 0,
+            updated_at    TEXT NOT NULL
+        );
+        INSERT INTO loan_v2 SELECT id, balance, rate, payment, as_of, closing_costs,
+                                   target_months, quote_spread, updated_at FROM loan;
+        DROP TABLE loan;
+        ALTER TABLE loan_v2 RENAME TO loan;
+        """
+    )
 
 
 def save_observations(hass: HomeAssistant, series_id: str, rows: list[tuple[str, float]]) -> int:

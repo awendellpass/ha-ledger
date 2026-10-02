@@ -52,7 +52,12 @@ Verified against live responses 2026-10-02.
 ## Refi math (`finance.py`)
 
 - Principal & interest only. Escrow is identical before and after a refi.
-- **Loan inputs:** balance, as-of date, rate, monthly P&I, closing costs, break-even target months, and a quote adjustment (the user's real quote minus the survey, 0 by default). Months remaining is derived from balance/rate/payment, and the balance is rolled forward month by month from the as-of date, so the user only has to re-enter it occasionally.
+- **Loan inputs.** Ledger is for an existing mortgage, so only the current loan is required: balance, as-of date, rate and monthly P&I. Months remaining is derived from balance/rate/payment, and the balance is rolled forward month by month from the as-of date, so the user only has to re-enter it occasionally.
+- **Refi assumptions (optional):**
+  - Refi closing costs: blank is stored as NULL and estimated at `ESTIMATED_COST_PCT` (2%) of the rolled-forward balance, rounded to $100. The response flags `closing_costs_estimated` and the UI labels it.
+  - Break-even target months: blank → `DEFAULT_TARGET_MONTHS` (36).
+  - Quote adjustment: blank → 0.
+- These are the costs of the *new* loan (appraisal, title, origination), not the original purchase. Don't remove them: without costs every lower rate breaks even in month 1 and the trigger rate is meaningless.
 - **Break-even** is interest-based: the first month where cumulative interest saved ≥ closing costs. It is not payment-based, which would flatter a 30-year term reset and break for a 15-year.
 - **Baseline for shorter terms:** a 15-year refi is compared against paying the current loan off on the same 15-year schedule, so savings reflect the rate alone.
 - **Trigger rate:** bisection for the highest refi rate whose break-even is within the target months, minus the quote adjustment, which converts it to a survey rate. It's capped at current + 3 points (`trigger_capped`).
@@ -65,7 +70,7 @@ The latest PMMS week is dated the day it's published. The 10-year move since tha
 ## Database Schema
 
 - **observations:** `series_id, obs_date, value`, PK `(series_id, obs_date)`. FRED-owned; upserts so revisions win.
-- **loan:** single row (`id = 1`): `balance, rate, payment, as_of, closing_costs, target_months, quote_spread, updated_at`. User-owned. It's written only by `POST /loan` and never seeded or touched at startup. Personal data lives only in `/config/ledger.db`, never in the repo.
+- **loan:** single row (`id = 1`): `balance, rate, payment, as_of, closing_costs (nullable = estimate), target_months, quote_spread, updated_at`. v2 (2026-10-02) made `closing_costs` nullable via a table rebuild in `_migrate_v2`. User-owned. It's written only by `POST /loan` and never seeded or touched at startup. Personal data lives only in `/config/ledger.db`, never in the repo.
 - **meta:** key/value: `schema_version`, `last_refresh`, `last_error`
 
 ## Refresh

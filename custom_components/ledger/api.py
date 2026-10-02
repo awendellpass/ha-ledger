@@ -13,6 +13,8 @@ from homeassistant.util import dt as dt_util
 from . import database, finance, fred
 from .const import (
     CONF_FRED_API_KEY,
+    DEFAULT_QUOTE_SPREAD,
+    DEFAULT_TARGET_MONTHS,
     DOMAIN,
     FETCH_TIMEOUT_SECONDS,
     FRED_API_URL,
@@ -72,26 +74,38 @@ async def async_refresh(hass: HomeAssistant) -> dict:
     return await async_status(hass)
 
 
+def _blank(v) -> bool:
+    return v is None or str(v).strip() == ""
+
+
 def validate_loan(body: dict) -> dict:
     """Coerce and sanity-check the loan form. Raises ValueError with a
-    message the panel can show as-is."""
+    message the panel can show as-is.
+
+    The current mortgage (balance, as-of, rate, payment) is required. The
+    refi assumptions are optional: blank closing costs stay None and get
+    estimated in finance.py; blank target/spread fall back to defaults."""
     try:
         loan = {
             "balance": float(body["balance"]),
             "rate": float(body["rate"]),
             "payment": float(body["payment"]),
             "as_of": date.fromisoformat(str(body["as_of"])).isoformat(),
-            "closing_costs": float(body["closing_costs"]),
-            "target_months": int(body["target_months"]),
-            "quote_spread": float(body.get("quote_spread") or 0),
         }
     except (KeyError, TypeError, ValueError):
-        raise ValueError("Fill in every field with a number (and a valid date).")
+        raise ValueError("Balance, as-of date, rate and monthly payment are required.")
+    try:
+        cc, tm, qs = body.get("closing_costs"), body.get("target_months"), body.get("quote_spread")
+        loan["closing_costs"] = None if _blank(cc) else float(cc)
+        loan["target_months"] = DEFAULT_TARGET_MONTHS if _blank(tm) else int(tm)
+        loan["quote_spread"] = DEFAULT_QUOTE_SPREAD if _blank(qs) else float(qs)
+    except (TypeError, ValueError):
+        raise ValueError("Refi assumptions must be numbers (or left blank).")
     if loan["balance"] <= 0 or loan["payment"] <= 0:
         raise ValueError("Balance and payment must be above zero.")
     if not 0 < loan["rate"] < 20:
         raise ValueError("Rate should be a percent, e.g. 5.625.")
-    if loan["closing_costs"] < 0 or not 1 <= loan["target_months"] <= 360:
+    if (loan["closing_costs"] or 0) < 0 or not 1 <= loan["target_months"] <= 360:
         raise ValueError("Closing costs can't be negative; break-even target is 1–360 months.")
     finance.term_months(loan["balance"], loan["rate"], loan["payment"])  # raises if payment < interest
     return loan
