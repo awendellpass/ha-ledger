@@ -1,0 +1,11 @@
+{
+  "domain": "ledger",
+  "name": "Ledger",
+  "version": "1.0.0",
+  "documentation": "https://github.com/awendellpass/ha-ledger",
+  "issue_tracker": "https://github.com/awendellpass/ha-ledger/issues",
+  "requirements": [],
+  "dependencies": ["http", "frontend"],
+  "codeowners": ["@awendellpass"],
+  "iot_class": "cloud_polling"
+}

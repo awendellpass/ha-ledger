@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ledger</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #111113;
+      --card: #1c1c1e;
+      --card2: #2c2c2e;
+      --border: #3a3a3c;
+      --grid: #2a2a2d;
+      --text: #ffffff;
+      --text2: #c7c7cc;
+      --muted: #8e8e93;
+      --accent: #2f7cf6;
+      --green: #30d158;
+      --orange: #ff9f0a;
+      --red: #ff453a;
+      /* Chart series — validated as a set on the dark card surface */
+      --s30: #3987e5;
+      --s15: #d95926;
+      --s10: #199e70;
+    }
+
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; min-height: 100vh; }
+    .num { font-variant-numeric: tabular-nums; }
+
+    #main { max-width: 860px; margin: 0 auto; padding: 16px 16px 40px; }
+
+    header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    header h1 { font-size: 22px; font-weight: 700; }
+    header .sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+    .btn { background: var(--card2); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 8px 14px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+    .btn:hover { border-color: var(--accent); }
+    .btn:disabled { opacity: 0.5; cursor: default; }
+    .btn.primary { background: var(--accent); border-color: var(--accent); }
+
+    .card { background: var(--card); border-radius: 14px; margin-bottom: 12px; padding: 16px; }
+    .card-title { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+    .note { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+    /* Stat tiles */
+    .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 12px; }
+    .tile { background: var(--card); border-radius: 14px; padding: 14px 16px; }
+    .tile-label { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+    .swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+    .tile-value { font-size: 28px; font-weight: 700; margin: 4px 0 2px; }
+    .tile-sub { font-size: 12px; color: var(--muted); }
+    .chg { font-weight: 600; color: var(--text2); }
+
+    /* Verdict */
+    .verdicts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .verdict { background: var(--card2); border-radius: 12px; padding: 12px 14px; }
+    .verdict-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .verdict-term { font-size: 15px; font-weight: 600; }
+    .verdict-line { font-size: 14px; color: var(--text2); line-height: 1.5; }
+    .verdict-line strong { color: var(--text); }
+    .pill { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+    .pill.go { background: rgba(48, 209, 88, 0.15); color: var(--green); }
+    .pill.close { background: rgba(255, 159, 10, 0.15); color: var(--orange); }
+    .pill.wait { background: rgba(142, 142, 147, 0.18); color: var(--text2); }
+
+    /* Chart */
+    .chart-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+    .ranges { display: flex; gap: 4px; }
+    .range { background: none; color: var(--muted); border: 1px solid transparent; border-radius: 8px; padding: 4px 9px; font-size: 12px; cursor: pointer; }
+    .range.on { color: var(--text); border-color: var(--border); background: var(--card2); }
+    .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .legend .dash { width: 14px; height: 0; border-top: 2px dashed var(--muted); }
+    .legend .dash.trig { border-top-style: dotted; border-color: var(--text2); }
+    .chart-wrap { position: relative; }
+    #chart { display: block; width: 100%; height: 280px; touch-action: pan-y; }
+    #chart text { font-size: 11px; fill: var(--muted); font-family: inherit; }
+    #chart .lbl { fill: var(--text2); font-weight: 600; }
+    #chart .halo { fill: var(--text2); paint-order: stroke; stroke: var(--card); stroke-width: 4px; stroke-linejoin: round; }
+    .tip { position: absolute; top: 0; pointer-events: none; background: var(--card2); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; font-size: 12px; min-width: 150px; display: none; z-index: 2; }
+    .tip-date { color: var(--muted); margin-bottom: 4px; }
+    .tip-row { display: flex; align-items: center; gap: 6px; justify-content: space-between; color: var(--text2); }
+    .tip-row b { color: var(--text); font-weight: 600; }
+    .tip-row .k { display: inline-flex; align-items: center; gap: 6px; }
+
+    /* Comparison table */
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { text-align: right; padding: 8px 6px; border-top: 1px solid var(--border); white-space: nowrap; }
+    th:first-child, td:first-child { text-align: left; color: var(--muted); font-weight: 400; }
+    thead th { border-top: none; font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+    .scroll { overflow-x: auto; }
+    .good { color: var(--green); }
+    .bad { color: var(--text2); }
+
+    /* Loan form */
+    details.panel { background: var(--card); border-radius: 14px; margin-bottom: 12px; }
+    details.panel > summary { list-style: none; cursor: pointer; padding: 14px 16px; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; display: flex; justify-content: space-between; }
+    details.panel > summary::-webkit-details-marker { display: none; }
+    details.panel > summary::after { content: "▸"; }
+    details.panel[open] > summary::after { content: "▾"; }
+    .panel-body { padding: 0 16px 16px; }
+    .form { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 14px; }
+    .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .field input { width: 100%; background: var(--card2); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 14px; font-family: inherit; }
+    .field input:focus { outline: none; border-color: var(--accent); }
+    .field .hint { font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+    .form-actions { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+    .form-msg { font-size: 13px; color: var(--muted); }
+    .form-msg.err { color: var(--red); }
+
+    .status { text-align: center; color: var(--muted); font-size: 12px; margin-top: 20px; line-height: 1.6; }
+    .status.err { color: var(--red); }
+    .empty { text-align: center; color: var(--muted); padding: 60px 20px; font-size: 14px; }
+
+    @media (max-width: 640px) {
+      .tiles { grid-template-columns: 1fr; }
+      .verdicts { grid-template-columns: 1fr; }
+      .form { grid-template-columns: 1fr; }
+      .tile-value { font-size: 24px; }
+      table { font-size: 13px; }
+      th, td { padding: 7px 4px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="main"><div class="empty">Loading…</div></div>
+  <script src="ledger-app.js"></script>
+</body>
+</html>
