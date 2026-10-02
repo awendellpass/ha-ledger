@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from datetime import date, timedelta
 
 import aiohttp
@@ -74,8 +75,19 @@ async def async_refresh(hass: HomeAssistant) -> dict:
     return await async_status(hass)
 
 
-def _blank(v) -> bool:
-    return v is None or str(v).strip() == ""
+def _num(body: dict, key: str, label: str, default=None, required: bool = False) -> float | None:
+    """Parse a form number the way people type it: '371,621.23', '$2,790.83',
+    '5.625%'. Blank → default (or an error if required)."""
+    raw = body.get(key)
+    text = re.sub(r"[,$%\s]", "", str(raw if raw is not None else ""))
+    if not text:
+        if required:
+            raise ValueError(f"{label} is required.")
+        return default
+    try:
+        return float(text)
+    except ValueError:
+        raise ValueError(f"{label} isn't a number: {raw}")
 
 
 def validate_loan(body: dict) -> dict:
@@ -85,22 +97,18 @@ def validate_loan(body: dict) -> dict:
     The current mortgage (balance, as-of, rate, payment) is required. The
     refi assumptions are optional: blank closing costs stay None and get
     estimated in finance.py; blank target/spread fall back to defaults."""
+    loan = {
+        "balance": _num(body, "balance", "Principal balance", required=True),
+        "rate": _num(body, "rate", "Interest rate", required=True),
+        "payment": _num(body, "payment", "Monthly principal & interest", required=True),
+        "closing_costs": _num(body, "closing_costs", "Refi closing costs"),
+        "target_months": int(_num(body, "target_months", "Break-even target", DEFAULT_TARGET_MONTHS)),
+        "quote_spread": _num(body, "quote_spread", "Quote adjustment", DEFAULT_QUOTE_SPREAD),
+    }
     try:
-        loan = {
-            "balance": float(body["balance"]),
-            "rate": float(body["rate"]),
-            "payment": float(body["payment"]),
-            "as_of": date.fromisoformat(str(body["as_of"])).isoformat(),
-        }
-    except (KeyError, TypeError, ValueError):
-        raise ValueError("Balance, as-of date, rate and monthly payment are required.")
-    try:
-        cc, tm, qs = body.get("closing_costs"), body.get("target_months"), body.get("quote_spread")
-        loan["closing_costs"] = None if _blank(cc) else float(cc)
-        loan["target_months"] = DEFAULT_TARGET_MONTHS if _blank(tm) else int(tm)
-        loan["quote_spread"] = DEFAULT_QUOTE_SPREAD if _blank(qs) else float(qs)
-    except (TypeError, ValueError):
-        raise ValueError("Refi assumptions must be numbers (or left blank).")
+        loan["as_of"] = date.fromisoformat(str(body.get("as_of"))).isoformat()
+    except ValueError:
+        raise ValueError("Balance as-of date is required.")
     if loan["balance"] <= 0 or loan["payment"] <= 0:
         raise ValueError("Balance and payment must be above zero.")
     if not 0 < loan["rate"] < 20:

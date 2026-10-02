@@ -341,16 +341,16 @@ const app = (() => {
         ${data.loan ? '' : '<p class="note" style="margin-bottom:12px">Enter your current mortgage to see the refi math. Stored only in Home Assistant.</p>'}
         <div class="form-group">Your mortgage</div>
         <div class="form">
-          ${field('balance', 'Principal balance', 'From your latest statement', 'type="number" step="0.01" min="0" inputmode="decimal"')}
+          ${field('balance', 'Principal balance', 'From your latest statement', 'type="text" inputmode="decimal" autocomplete="off"')}
           ${field('as_of', 'Balance as of', 'Ledger rolls the balance forward from here', 'type="date"')}
-          ${field('rate', 'Interest rate (%)', '', 'type="number" step="0.001" min="0" inputmode="decimal"')}
-          ${field('payment', 'Monthly principal &amp; interest', 'Leave out escrow (taxes/insurance)', 'type="number" step="0.01" min="0" inputmode="decimal"')}
+          ${field('rate', 'Interest rate (%)', '', 'type="text" inputmode="decimal" autocomplete="off"')}
+          ${field('payment', 'Monthly principal &amp; interest', 'Leave out escrow (taxes/insurance)', 'type="text" inputmode="decimal" autocomplete="off"')}
         </div>
         <div class="form-group">Refi assumptions <span>optional — leave blank for defaults</span></div>
         <div class="form">
-          ${field('closing_costs', 'Refi closing costs', 'Fees on the new loan (appraisal, title, origination). Blank = estimate at 2% of your balance', 'type="number" step="100" min="0" inputmode="decimal" placeholder="Estimate"')}
-          ${field('target_months', 'Break-even target (months)', 'How soon the refi must pay for itself — about how long you\'ll stay', 'type="number" step="1" min="1" max="360" placeholder="36"')}
-          ${field('quote_spread', 'Quote adjustment (pts)', 'A real quote minus the survey rate, once you have one', 'type="number" step="0.125" placeholder="0"')}
+          ${field('closing_costs', 'Refi closing costs', 'Fees on the new loan (appraisal, title, origination). Blank = estimate at 2% of your balance', 'type="text" inputmode="decimal" autocomplete="off" placeholder="Estimate"')}
+          ${field('target_months', 'Break-even target (months)', 'How soon the refi must pay for itself — about how long you\'ll stay', 'type="text" inputmode="decimal" autocomplete="off" placeholder="36"')}
+          ${field('quote_spread', 'Quote adjustment (pts)', 'A real quote minus the survey rate, once you have one', 'type="text" inputmode="decimal" autocomplete="off" placeholder="0"')}
         </div>
         <div class="form-actions">
           <button class="btn primary" onclick="app.saveLoan()" ${saving ? 'disabled' : ''}>${saving ? 'Saving…' : 'Save'}</button>
